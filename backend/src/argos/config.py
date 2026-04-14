@@ -18,10 +18,11 @@ class Settings(BaseSettings):
     # Redis
     redis_url: str = "redis://localhost:6379"
 
-    # LLM
-    anthropic_api_key: str = ""
-    match_model: str = "claude-sonnet-4-20250514"
-    extract_model: str = "claude-haiku-4-5-20251001"
+    # LLM (via LiteLLM proxy)
+    litellm_base_url: str = "http://localhost:4000"
+    litellm_api_key: str = "sk-unused"  # LiteLLM handles upstream auth
+    match_model: str = "match-model"
+    extract_model: str = "extract-model"
 
     # Search
     search_max_results: int = 10
