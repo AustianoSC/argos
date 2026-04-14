@@ -1,0 +1,20 @@
+model_list:
+  # Product matching — higher accuracy, low volume
+  - model_name: "match-model"
+    litellm_params:
+      model: anthropic/claude-sonnet-4-20250514
+      api_base: os.environ/UPSTREAM_API_BASE
+      api_key: os.environ/UPSTREAM_API_KEY
+
+  # Price extraction — high volume, lower cost
+  - model_name: "extract-model"
+    litellm_params:
+      model: anthropic/claude-haiku-4-5-20251001
+      api_base: os.environ/UPSTREAM_API_BASE
+      api_key: os.environ/UPSTREAM_API_KEY
+
+  # Phase 3: uncomment to route extraction to local Ollama
+  # - model_name: "extract-model"
+  #   litellm_params:
+  #     model: ollama/qwen3-4b
+  #     api_base: http://ollama:11434
