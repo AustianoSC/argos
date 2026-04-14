@@ -8,6 +8,10 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
     )
 
+    # Logging
+    log_level: str = "INFO"
+    log_format: str = "json"  # "json" or "text"
+
     # Database
     database_url: str = "postgresql+asyncpg://argos:argos_dev@localhost:5432/argos"
 
