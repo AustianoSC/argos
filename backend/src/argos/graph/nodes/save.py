@@ -6,16 +6,18 @@ from urllib.parse import urlparse
 from argos.db import repositories as repo
 from argos.db.engine import async_session_factory
 from argos.graph.state import PipelineState
+from argos.services.alerts import evaluate_and_alert
 
 logger = logging.getLogger(__name__)
 
 
 async def save_results_node(state: PipelineState) -> dict:
-    """Persist extracted prices to the database.
+    """Persist extracted prices to the database and evaluate alerts.
 
     For each extracted price:
-    1. Create or find the ProductSource
+    1. Create the ProductSource
     2. Create a PriceRecord
+    3. Evaluate alert conditions (target price, % drop, back in stock)
     All writes are committed atomically.
     """
     product_id_str = state["product_id"]
@@ -29,6 +31,11 @@ async def save_results_node(state: PipelineState) -> dict:
     saved_count = 0
 
     async with async_session_factory() as session:
+        product = await repo.get_product(session, product_id)
+        if product is None:
+            logger.error("Product %s not found in database", product_id_str)
+            return {}
+
         for price_data in extracted_prices:
             try:
                 domain = urlparse(price_data.url).netloc.lower()
@@ -49,7 +56,7 @@ async def save_results_node(state: PipelineState) -> dict:
                     match_confidence=match_confidence,
                 )
 
-                await repo.create_price_record(
+                price_record = await repo.create_price_record(
                     session,
                     product_id=product_id,
                     source_id=source.id,
@@ -59,6 +66,10 @@ async def save_results_node(state: PipelineState) -> dict:
                     raw_text=price_data.raw_text,
                     metadata={"seller": price_data.seller} if price_data.seller else None,
                 )
+
+                # Get previous price for this source to evaluate alerts
+                previous_price = await repo.get_latest_price(session, source.id)
+                await evaluate_and_alert(session, product, price_record, previous_price)
 
                 saved_count += 1
             except Exception as e:
