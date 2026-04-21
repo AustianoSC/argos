@@ -1,0 +1,19 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Generate API Client",
+      "type": "shell",
+      "command": "npm run generate-api",
+      "options": {
+        "cwd": "${workspaceFolder}/frontend",
+        "shell": {
+          "executable": "/bin/zsh",
+          "args": ["-i", "-l", "-c"]
+        }
+      },
+      "problemMatcher": [],
+      "detail": "Export OpenAPI spec from FastAPI and regenerate TypeScript client"
+    }
+  ]
+}
