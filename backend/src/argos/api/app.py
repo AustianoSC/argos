@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from argos.api.deps import close_arq_pool, init_arq_pool
 from argos.api.routes import alerts, products
 from argos.logging import setup_logging
 from argos.services import fetcher
@@ -11,7 +12,9 @@ from argos.services import fetcher
 @asynccontextmanager
 async def lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
     setup_logging()
+    await init_arq_pool()
     yield
+    await close_arq_pool()
     await fetcher.close()
 
 

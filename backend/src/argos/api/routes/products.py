@@ -2,9 +2,11 @@ import logging
 import uuid
 from http import HTTPStatus
 
+from arq.connections import ArqRedis
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from argos.api.deps import get_arq_pool
 from argos.api.schemas import (
     PriceRecordResponse,
     ProductCreate,
@@ -111,14 +113,14 @@ async def update_product(
 @router.post("/{product_id}/check", status_code=202)
 async def trigger_check(
     product_id: uuid.UUID,
-    background_tasks: BackgroundTasks,
     session: AsyncSession = Depends(get_session),
+    arq_pool: ArqRedis = Depends(get_arq_pool),
 ) -> dict:
-    """Trigger a manual price re-check for a product."""
+    """Trigger a manual price re-check via ARQ worker."""
     product = await repo.get_product(session, product_id)
     if product is None:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Product not found")
 
-    background_tasks.add_task(_run_pipeline, str(product.id), product.name)
+    await arq_pool.enqueue_job("check_product_prices", str(product_id))
 
     return {"status": "check_queued", "product_id": str(product_id)}
