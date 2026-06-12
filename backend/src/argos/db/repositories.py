@@ -89,6 +89,17 @@ async def create_source(
     return source
 
 
+async def get_source_by_url(
+    session: AsyncSession, product_id: uuid.UUID, url: str
+) -> ProductSource | None:
+    stmt = select(ProductSource).where(
+        ProductSource.product_id == product_id,
+        ProductSource.url == url,
+    )
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
+
+
 async def get_active_sources(
     session: AsyncSession, product_id: uuid.UUID
 ) -> list[ProductSource]:
