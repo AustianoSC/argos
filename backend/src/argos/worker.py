@@ -1,6 +1,6 @@
 import logging
 import uuid
-from datetime import UTC
+from datetime import datetime, timezone
 from decimal import Decimal
 
 from arq import cron
@@ -87,7 +87,7 @@ async def check_product_prices(ctx: dict, product_id: str) -> None:
                     metadata={"seller": extracted.seller} if extracted.seller else None,
                 )
 
-                source.last_checked_at = UTC.now()
+                source.last_checked_at = datetime.now(timezone.utc)  # noqa: UP017
                 await evaluate_and_alert(session, product, price_record, previous_price)
 
                 logger.info(
