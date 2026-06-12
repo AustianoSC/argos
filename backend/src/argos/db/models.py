@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import Boolean, ForeignKey, Index, Numeric, String, Text
+from sqlalchemy import Boolean, ForeignKey, Index, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -50,6 +50,7 @@ class ProductSource(Base):
     prices: Mapped[list["PriceRecord"]] = relationship(back_populates="source")
 
     __table_args__ = (
+        UniqueConstraint("product_id", "url", name="uq_product_sources_product_url"),
         Index("ix_product_sources_product_active", "product_id", "is_active"),
     )
 
