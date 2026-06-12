@@ -40,21 +40,28 @@ async def save_results_node(state: PipelineState) -> dict:
             try:
                 domain = urlparse(price_data.url).netloc.lower()
 
-                # Find the match result for this URL to get confidence
-                match_confidence = 0.0
-                for match in state.get("match_results", []):
-                    if match.url == price_data.url and match.is_match:
-                        match_confidence = match.confidence
-                        break
-
-                source = await repo.create_source(
-                    session,
-                    product_id=product_id,
-                    url=price_data.url,
-                    domain=domain,
-                    title=None,
-                    match_confidence=match_confidence,
+                match_confidence = next(
+                    (
+                        m.confidence
+                        for m in state.get("match_results", [])
+                        if m.url == price_data.url and m.is_match
+                    ),
+                    0.0,
                 )
+
+                source = await repo.get_source_by_url(session, product_id, price_data.url)
+                if source is None:
+                    source = await repo.create_source(
+                        session,
+                        product_id=product_id,
+                        url=price_data.url,
+                        domain=domain,
+                        title=None,
+                        match_confidence=match_confidence,
+                    )
+                    previous_price = None
+                else:
+                    previous_price = await repo.get_latest_price(session, source.id)
 
                 price_record = await repo.create_price_record(
                     session,
@@ -67,8 +74,6 @@ async def save_results_node(state: PipelineState) -> dict:
                     metadata={"seller": price_data.seller} if price_data.seller else None,
                 )
 
-                # Get previous price for this source to evaluate alerts
-                previous_price = await repo.get_latest_price(session, source.id)
                 await evaluate_and_alert(session, product, price_record, previous_price)
 
                 saved_count += 1
