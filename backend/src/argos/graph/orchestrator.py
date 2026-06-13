@@ -16,12 +16,12 @@ from argos.graph.state import (
 logger = logging.getLogger(__name__)
 
 
-def fan_out_to_matchers(state: PipelineState) -> list[Send]:
+def fan_out_to_matchers(state: PipelineState) -> list[Send] | str:
     """Dynamic fan-out: create one match worker per search result."""
     results = state.get("search_results", [])
     if not results:
         logger.warning("No search results to match")
-        return [Send("save_results", state)]
+        return "save_results"
 
     logger.info("Fanning out to %d match workers", len(results))
     return [
@@ -37,13 +37,13 @@ def fan_out_to_matchers(state: PipelineState) -> list[Send]:
     ]
 
 
-def fan_out_to_extractors(state: PipelineState) -> list[Send]:
+def fan_out_to_extractors(state: PipelineState) -> list[Send] | str:
     """Dynamic fan-out: create one extract worker per confirmed match."""
     matched = [m for m in state.get("match_results", []) if m.is_match]
 
     if not matched:
         logger.info("No confirmed matches, skipping extraction")
-        return [Send("save_results", state)]
+        return "save_results"
 
     logger.info("Fanning out to %d extract workers", len(matched))
     return [
